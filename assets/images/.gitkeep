@@ -1,0 +1,15 @@
+# DEXPAY WooCommerce Assets
+#
+# Local files:
+# - dexpay.png (main DEXPAY logo)
+#
+# Payment method icons are loaded from CDN:
+# https://dexchange-s3.s3.eu-north-1.amazonaws.com/icons/
+#
+# Available icons:
+# - wave.png (Wave)
+# - om.png (Orange Money)
+# - mtn.png (MTN Money)
+# - moov.png (Moov Money)
+# - fm.png (Free Money)
+# - wizall.png (Wizall)

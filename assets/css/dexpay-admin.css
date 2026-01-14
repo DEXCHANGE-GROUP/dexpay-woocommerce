@@ -1,0 +1,171 @@
+/**
+ * DEXPAY WooCommerce - Admin Styles
+ *
+ * @package DEXPAY_WooCommerce
+ */
+
+/* Settings page header */
+.woocommerce_page_wc-settings #dexpay h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Sandbox badge */
+.woocommerce_page_wc-settings #dexpay h2 span {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Settings sections */
+.form-table th {
+  padding: 20px 10px 20px 0;
+}
+
+.form-table td {
+  padding: 15px 10px;
+}
+
+/* API key fields */
+.form-table input[type='password'],
+.form-table input[type='text'] {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 13px;
+}
+
+/* Webhook URL display */
+.form-table code {
+  background: #f0f0f1;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 12px;
+  word-break: break-all;
+  max-width: 100%;
+  margin-top: 5px;
+}
+
+/* Section titles */
+.form-table h2.wc-settings-sub-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 30px 0 10px;
+  padding-top: 20px;
+  border-top: 1px solid #dcdcde;
+}
+
+/* Description links */
+.form-table td p.description a {
+  color: #2271b1;
+  text-decoration: none;
+}
+
+.form-table td p.description a:hover {
+  color: #135e96;
+  text-decoration: underline;
+}
+
+/* Checkbox styling */
+.form-table input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+}
+
+/* Select styling */
+.form-table select {
+  min-width: 200px;
+  padding: 8px 12px;
+}
+
+/* Order meta box */
+#dexpay-order-data {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 15px;
+  margin: 10px 0;
+}
+
+#dexpay-order-data h4 {
+  margin: 0 0 10px;
+  color: #1d2327;
+  font-size: 14px;
+}
+
+#dexpay-order-data p {
+  margin: 5px 0;
+  font-size: 13px;
+}
+
+#dexpay-order-data strong {
+  display: inline-block;
+  min-width: 120px;
+  color: #50575e;
+}
+
+#dexpay-order-data code {
+  background: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* Status badge in orders list */
+.order-status.status-dexpay-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Notice styles */
+.notice.dexpay-notice {
+  border-left-color: #4a90d9;
+  padding: 12px 15px;
+}
+
+.notice.dexpay-notice.notice-success {
+  border-left-color: #46b450;
+}
+
+.notice.dexpay-notice.notice-error {
+  border-left-color: #dc3232;
+}
+
+.notice.dexpay-notice p {
+  margin: 0.5em 0;
+}
+
+.notice.dexpay-notice strong {
+  color: #23282d;
+}
+
+/* Log viewer link */
+.dexpay-log-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.dexpay-log-link::before {
+  content: '📋';
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+  .form-table th,
+  .form-table td {
+    display: block;
+    width: 100%;
+    padding: 10px 0;
+  }
+
+  .form-table th {
+    padding-bottom: 5px;
+  }
+
+  .form-table code {
+    font-size: 11px;
+  }
+}

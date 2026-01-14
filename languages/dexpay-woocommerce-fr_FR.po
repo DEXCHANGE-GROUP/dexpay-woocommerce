@@ -1,0 +1,270 @@
+# French translation for DEXPAY for WooCommerce
+# Copyright (C) 2024 DEXPAY
+# This file is distributed under the same license as the DEXPAY for WooCommerce package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: DEXPAY for WooCommerce 1.0.0\n"
+"Report-Msgid-Bugs-To: https://dexpay.africa/support\n"
+"POT-Creation-Date: 2024-01-13 00:00:00+00:00\n"
+"PO-Revision-Date: 2024-01-13 00:00:00+00:00\n"
+"Last-Translator: DEXPAY Team\n"
+"Language-Team: French\n"
+"Language: fr_FR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "DEXPAY for WooCommerce requires WooCommerce to be installed and active. You can download %s here."
+msgstr "DEXPAY pour WooCommerce nécessite que WooCommerce soit installé et activé. Vous pouvez télécharger %s ici."
+
+msgid "Settings"
+msgstr "Paramètres"
+
+msgid "DEXPAY"
+msgstr "DEXPAY"
+
+msgid "Accept Mobile Money payments (Wave, Orange Money, MTN, Moov) with DEXPAY."
+msgstr "Acceptez les paiements Mobile Money (Wave, Orange Money, MTN, Moov) avec DEXPAY."
+
+msgid "Enable/Disable"
+msgstr "Activer/Désactiver"
+
+msgid "Enable DEXPAY"
+msgstr "Activer DEXPAY"
+
+msgid "Title"
+msgstr "Titre"
+
+msgid "This controls the title which the user sees during checkout."
+msgstr "Ceci contrôle le titre que l'utilisateur voit lors du paiement."
+
+msgid "Mobile Money (Wave, Orange Money, MTN...)"
+msgstr "Mobile Money (Wave, Orange Money, MTN...)"
+
+msgid "Description"
+msgstr "Description"
+
+msgid "This controls the description which the user sees during checkout."
+msgstr "Ceci contrôle la description que l'utilisateur voit lors du paiement."
+
+msgid "Pay securely with Mobile Money via DEXPAY."
+msgstr "Payez en toute sécurité avec Mobile Money via DEXPAY."
+
+msgid "Sandbox Mode"
+msgstr "Mode Sandbox"
+
+msgid "Enable Sandbox Mode"
+msgstr "Activer le mode Sandbox"
+
+msgid "Place the payment gateway in sandbox mode for testing. Use sandbox API keys."
+msgstr "Mettre la passerelle de paiement en mode sandbox pour les tests. Utilisez les clés API sandbox."
+
+msgid "Production API Credentials"
+msgstr "Identifiants API Production"
+
+msgid "Get your API credentials from your <a href=\"%s\" target=\"_blank\">DEXPAY Dashboard</a>."
+msgstr "Obtenez vos identifiants API depuis votre <a href=\"%s\" target=\"_blank\">tableau de bord DEXPAY</a>."
+
+msgid "API Key"
+msgstr "Clé API"
+
+msgid "Your production API key (pk_live_xxx)."
+msgstr "Votre clé API production (pk_live_xxx)."
+
+msgid "API Secret"
+msgstr "Secret API"
+
+msgid "Your production API secret (sk_live_xxx)."
+msgstr "Votre secret API production (sk_live_xxx)."
+
+msgid "Sandbox API Credentials"
+msgstr "Identifiants API Sandbox"
+
+msgid "Enter your sandbox/test API credentials here."
+msgstr "Entrez vos identifiants API sandbox/test ici."
+
+msgid "Sandbox API Key"
+msgstr "Clé API Sandbox"
+
+msgid "Your sandbox API key (pk_test_xxx)."
+msgstr "Votre clé API sandbox (pk_test_xxx)."
+
+msgid "Sandbox API Secret"
+msgstr "Secret API Sandbox"
+
+msgid "Your sandbox API secret (sk_test_xxx)."
+msgstr "Votre secret API sandbox (sk_test_xxx)."
+
+msgid "Webhook Settings"
+msgstr "Paramètres Webhook"
+
+msgid "Configure this webhook URL in your DEXPAY dashboard: <code>%s</code>"
+msgstr "Configurez cette URL webhook dans votre tableau de bord DEXPAY : <code>%s</code>"
+
+msgid "Webhook Secret"
+msgstr "Secret Webhook"
+
+msgid "Your webhook secret for signature verification."
+msgstr "Votre secret webhook pour la vérification de signature."
+
+msgid "Advanced Settings"
+msgstr "Paramètres avancés"
+
+msgid "Debug Log"
+msgstr "Journal de débogage"
+
+msgid "Enable logging"
+msgstr "Activer les logs"
+
+msgid "Log DEXPAY events inside %s"
+msgstr "Enregistrer les événements DEXPAY dans %s"
+
+msgid "Order Status After Payment"
+msgstr "Statut de commande après paiement"
+
+msgid "Select the order status after successful payment."
+msgstr "Sélectionnez le statut de commande après un paiement réussi."
+
+msgid "Processing"
+msgstr "En cours"
+
+msgid "Completed"
+msgstr "Terminée"
+
+msgid "Accepted Payment Methods:"
+msgstr "Méthodes de paiement acceptées :"
+
+msgid "(SANDBOX MODE - No real charges)"
+msgstr "(MODE SANDBOX - Aucun frais réel)"
+
+msgid "Order not found."
+msgstr "Commande non trouvée."
+
+msgid "Payment error: "
+msgstr "Erreur de paiement : "
+
+msgid "Unable to create payment session. Please try again."
+msgstr "Impossible de créer la session de paiement. Veuillez réessayer."
+
+msgid "DEXPAY payment initiated. Reference: %s"
+msgstr "Paiement DEXPAY initié. Référence : %s"
+
+msgid "Awaiting DEXPAY payment."
+msgstr "En attente du paiement DEXPAY."
+
+msgid "%1$s and %2$d other items"
+msgstr "%1$s et %2$d autres articles"
+
+msgid "This order was placed in SANDBOX mode. No real payment was processed."
+msgstr "Cette commande a été passée en mode SANDBOX. Aucun paiement réel n'a été traité."
+
+msgid "DEXPAY Reference:"
+msgstr "Référence DEXPAY :"
+
+msgid "DEXPAY: Payment initiated by customer."
+msgstr "DEXPAY : Paiement initié par le client."
+
+msgid "DEXPAY payment completed via %1$s. Transaction ID: %2$s"
+msgstr "Paiement DEXPAY effectué via %1$s. ID de transaction : %2$s"
+
+msgid "Mobile Money"
+msgstr "Mobile Money"
+
+msgid "N/A"
+msgstr "N/A"
+
+msgid "DEXPAY payment failed. %1$s (Code: %2$s)"
+msgstr "Échec du paiement DEXPAY. %1$s (Code : %2$s)"
+
+msgid "Unknown error"
+msgstr "Erreur inconnue"
+
+msgid "DEXPAY payment was cancelled."
+msgstr "Le paiement DEXPAY a été annulé."
+
+msgid "Refunded via DEXPAY"
+msgstr "Remboursé via DEXPAY"
+
+msgid "DEXPAY refund processed. Amount: %1$s %2$s. Refund ID: %3$s"
+msgstr "Remboursement DEXPAY traité. Montant : %1$s %2$s. ID de remboursement : %3$s"
+
+msgid "Senegal"
+msgstr "Sénégal"
+
+msgid "Ivory Coast"
+msgstr "Côte d'Ivoire"
+
+msgid "Mali"
+msgstr "Mali"
+
+msgid "Burkina Faso"
+msgstr "Burkina Faso"
+
+msgid "Benin"
+msgstr "Bénin"
+
+msgid "Togo"
+msgstr "Togo"
+
+msgid "Niger"
+msgstr "Niger"
+
+msgid "Guinea-Bissau"
+msgstr "Guinée-Bissau"
+
+msgid "Guinea"
+msgstr "Guinée"
+
+msgid "Cameroon"
+msgstr "Cameroun"
+
+msgid "Gabon"
+msgstr "Gabon"
+
+msgid "Congo"
+msgstr "Congo"
+
+msgid "Chad"
+msgstr "Tchad"
+
+msgid "Central African Republic"
+msgstr "République centrafricaine"
+
+msgid "Equatorial Guinea"
+msgstr "Guinée équatoriale"
+
+msgid "DEXPAY for WooCommerce"
+msgstr "DEXPAY pour WooCommerce"
+
+msgid "Accept Mobile Money payments (Wave, Orange Money, MTN, Moov) with DEXPAY payment gateway for WooCommerce."
+msgstr "Acceptez les paiements Mobile Money (Wave, Orange Money, MTN, Moov) avec la passerelle de paiement DEXPAY pour WooCommerce."
+
+msgctxt "Order status"
+msgid "DEXPAY Pending"
+msgstr "DEXPAY En attente"
+
+msgid "Sign up here"
+msgstr "Inscrivez-vous ici"
+
+msgid "Need an account? %s"
+msgstr "Besoin d'un compte ? %s"
+
+msgid "SANDBOX MODE"
+msgstr "MODE SANDBOX"
+
+msgid "Client Pays Fees"
+msgstr "Frais à la charge du client"
+
+msgid "Enable client support fee"
+msgstr "Activer les frais supportés par le client"
+
+msgid "When enabled, the transaction fees will be added to the total amount and paid by the customer instead of the merchant."
+msgstr "Lorsque cette option est activée, les frais de transaction seront ajoutés au montant total et payés par le client au lieu du marchand."
+
+msgid "Check for updates"
+msgstr "Vérifier les mises à jour"
+
+msgid "No changelog available."
+msgstr "Aucun changelog disponible."
