@@ -58,9 +58,17 @@ class DexPay_Webhook {
             return;
         }
 
-        // Verify signature if secret is configured
+        // Verify signature if secret is configured.
+        // DexPay sends the HMAC in `X-Webhook-Signature`. We also look at the
+        // legacy `X-DexPay-Signature` header in case an older deployment is
+        // still emitting it.
         if (!empty($this->webhook_secret)) {
-            $signature = isset($_SERVER['HTTP_X_DEXPAY_SIGNATURE']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_X_DEXPAY_SIGNATURE'])) : '';
+            $signature = '';
+            if (isset($_SERVER['HTTP_X_WEBHOOK_SIGNATURE'])) {
+                $signature = sanitize_text_field(wp_unslash($_SERVER['HTTP_X_WEBHOOK_SIGNATURE']));
+            } elseif (isset($_SERVER['HTTP_X_DEXPAY_SIGNATURE'])) {
+                $signature = sanitize_text_field(wp_unslash($_SERVER['HTTP_X_DEXPAY_SIGNATURE']));
+            }
 
             if (!DexPay_API::verify_webhook_signature($payload, $signature, $this->webhook_secret)) {
                 DexPay_Logger::error('Invalid webhook signature', array(
