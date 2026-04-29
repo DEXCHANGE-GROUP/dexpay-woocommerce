@@ -3,7 +3,7 @@ Contributors: dexpay
 Tags: woocommerce, payment gateway, mobile money, wave, orange money, mtn, africa, senegal
 Requires at least: 5.8
 Tested up to: 6.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 Requires PHP: 7.4
 WC requires at least: 7.0
 WC tested up to: 8.5
