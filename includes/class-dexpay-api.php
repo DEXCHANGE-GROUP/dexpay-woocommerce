@@ -142,6 +142,17 @@ class DexPay_API {
         $body        = wp_remote_retrieve_body($response);
         $decoded     = json_decode($body, true);
 
+        // DIAG (temporaire) : statut HTTP + body BRUT + erreur de parsing JSON.
+        // Le body de /checkout-sessions ne contient pas de secret (les clés sont
+        // dans les headers, jamais loggés). Permet de voir si la réponse n'est
+        // pas du JSON (ex: HTML d'erreur, page de login WAF) ou un JSON inattendu.
+        DexPay_Logger::debug('API Raw Response', array(
+            'endpoint'    => $endpoint,
+            'status_code' => $status_code,
+            'json_error'  => (JSON_ERROR_NONE !== json_last_error()) ? json_last_error_msg() : null,
+            'raw_body'    => is_string($body) ? mb_substr($body, 0, 2000) : $body,
+        ));
+
         DexPay_Logger::log_api_response($endpoint, $status_code, $decoded);
 
         if ($status_code < 200 || $status_code >= 300) {

@@ -3,7 +3,7 @@ Contributors: dexpay
 Tags: woocommerce, payment gateway, mobile money, wave, orange money, mtn, africa, senegal
 Requires at least: 5.8
 Tested up to: 6.4
-Stable tag: 1.0.1
+Stable tag: 1.1.0
 Requires PHP: 7.4
 WC requires at least: 7.0
 WC tested up to: 8.5
@@ -98,6 +98,14 @@ Currently, the plugin supports one-time payments only. Subscription support is p
 
 == Changelog ==
 
+= 1.1.0 =
+* Embedded checkout: payment opens in a popup window (iframe) on your site instead of a full redirect, via the DexPay JS SDK
+* New "Checkout Display" setting (embedded popup / redirect)
+* More robust payment processing (errors caught and logged, no more generic checkout failure when the payment link was already created)
+* Detailed WooCommerce logs (payload, HTTP status, raw response, extracted URL) with masked secrets
+* New accepted-payment-methods banner and DEXPAY logo on the gateway title
+* Updated default title/description with a safe one-time migration
+
 = 1.0.0 =
 * Initial release
 * Support for Wave, Orange Money, MTN, Moov, and Free Money
@@ -107,6 +115,9 @@ Currently, the plugin supports one-time payments only. Subscription support is p
 * Debug logging
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Adds embedded popup checkout (no redirect), more robust payment processing, and refreshed checkout branding. Safe upgrade — your API keys and custom title/description are preserved.
 
 = 1.0.0 =
 Initial release of DEXPAY for WooCommerce.

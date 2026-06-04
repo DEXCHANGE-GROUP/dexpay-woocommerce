@@ -3,7 +3,7 @@
  * Plugin Name: DEXPAY for WooCommerce
  * Plugin URI: https://dexpay.africa
  * Description: Accept Mobile Money payments (Wave, Orange Money, MTN, Moov) with DEXPAY payment gateway for WooCommerce.
- * Version: 1.0.1
+ * Version: 1.1.0
  * Author: DEXPAY
  * Author URI: https://dexpay.africa
  * License: GPL-2.0+
@@ -23,7 +23,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DEXPAY_WC_VERSION', '1.0.1');
+define('DEXPAY_WC_VERSION', '1.1.0');
 define('DEXPAY_WC_PLUGIN_FILE', __FILE__);
 define('DEXPAY_WC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DEXPAY_WC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -93,6 +93,9 @@ final class DexPay_WooCommerce {
 
         // Include required files
         $this->includes();
+
+        // Migrations one-time (sur changement de version) — ex: libellés gateway.
+        $this->maybe_upgrade();
 
         // Register payment gateway
         add_filter('woocommerce_payment_gateways', array($this, 'add_gateway'));
@@ -209,6 +212,62 @@ final class DexPay_WooCommerce {
                 DEXPAY_WC_PLUGIN_FILE,
                 true
             );
+        }
+    }
+
+    /**
+     * Run one-time upgrade migrations when the plugin version changes.
+     * Idempotent : ne tourne qu'une fois par version (puis met à jour le flag).
+     */
+    public function maybe_upgrade() {
+        $stored = get_option('dexpay_wc_version');
+        if (DEXPAY_WC_VERSION === $stored) {
+            return;
+        }
+
+        $this->migrate_gateway_labels();
+
+        update_option('dexpay_wc_version', DEXPAY_WC_VERSION);
+    }
+
+    /**
+     * Met à jour le titre/description du gateway vers le nouveau wording,
+     * UNIQUEMENT si la valeur sauvegardée est vide ou correspond encore à une
+     * ancienne valeur connue (on ne touche pas une personnalisation marchand).
+     */
+    private function migrate_gateway_labels() {
+        $settings = get_option('woocommerce_dexpay_settings');
+        if (!is_array($settings)) {
+            return;
+        }
+
+        $old_titles = array(
+            '',
+            'Mobile Money (Wave, Orange Money, MTN...)',
+            'Payez avec Mobile Money ou Carte Bancaire (Wave, Orange Money, MTN...)',
+        );
+        $old_descriptions = array(
+            '',
+            'Pay securely with Mobile Money via DEXPAY.',
+        );
+
+        $new_title       = 'Payez avec DexPay';
+        $new_description  = "Paiement sécurisé via Dexpay : Wave, Orange Money, Mixx By Yas etc\n\n";
+        $new_description .= "Des frais de transaction peuvent s'appliquer.*";
+
+        $changed = false;
+
+        if (!isset($settings['title']) || in_array($settings['title'], $old_titles, true)) {
+            $settings['title'] = $new_title;
+            $changed = true;
+        }
+        if (!isset($settings['description']) || in_array($settings['description'], $old_descriptions, true)) {
+            $settings['description'] = $new_description;
+            $changed = true;
+        }
+
+        if ($changed) {
+            update_option('woocommerce_dexpay_settings', $settings);
         }
     }
 

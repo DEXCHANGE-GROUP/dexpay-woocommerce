@@ -46,6 +46,13 @@ class DexPay_Gateway extends WC_Payment_Gateway {
     private $client_support_fee;
 
     /**
+     * Checkout display mode: 'modal' (embedded popup via dexpay.js) or 'redirect'.
+     *
+     * @var string
+     */
+    private $checkout_mode;
+
+    /**
      * Constructor
      */
     public function __construct() {
@@ -70,6 +77,7 @@ class DexPay_Gateway extends WC_Payment_Gateway {
         $this->sandbox            = 'yes' === $this->get_option('sandbox');
         $this->client_support_fee = 'yes' === $this->get_option('client_support_fee');
         $this->debug              = 'yes' === $this->get_option('debug');
+        $this->checkout_mode      = $this->get_option('checkout_mode', 'modal');
 
         // API credentials
         $api_key    = $this->sandbox ? $this->get_option('sandbox_api_key') : $this->get_option('api_key');
@@ -89,6 +97,14 @@ class DexPay_Gateway extends WC_Payment_Gateway {
         // Add custom order status
         add_action('init', array($this, 'register_custom_order_statuses'));
         add_filter('wc_order_statuses', array($this, 'add_custom_order_statuses'));
+
+        // Embedded checkout (mode modal) : la page "Payer la commande"
+        // (order-receipt.php) ouvre le SDK dexpay.js en popup via ce hook.
+        add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
+
+        // Endpoint léger interrogé par le SDK pour connaître l'état du paiement
+        // (mis à jour par le webhook). wc_ajax est public (connectés + invités).
+        add_action('wc_ajax_dexpay_check_order', array($this, 'ajax_check_order'));
     }
 
     /**
@@ -107,14 +123,14 @@ class DexPay_Gateway extends WC_Payment_Gateway {
                 'title'       => __('Title', 'dexpay-woocommerce'),
                 'type'        => 'text',
                 'description' => __('This controls the title which the user sees during checkout.', 'dexpay-woocommerce'),
-                'default'     => __('Payez avec Mobile Money ou Carte Bancaire (Wave, Orange Money, MTN...)', 'dexpay-woocommerce'),
+                'default'     => __('Payez avec DexPay', 'dexpay-woocommerce'),
                 'desc_tip'    => true,
             ),
             'description' => array(
                 'title'       => __('Description', 'dexpay-woocommerce'),
                 'type'        => 'textarea',
                 'description' => __('This controls the description which the user sees during checkout.', 'dexpay-woocommerce'),
-                'default'     => __('Pay securely with Mobile Money via DEXPAY.', 'dexpay-woocommerce'),
+                'default'     => __("Paiement sécurisé via Dexpay : Wave, Orange Money, Mixx By Yas etc\n\nDes frais de transaction peuvent s'appliquer.*", 'dexpay-woocommerce'),
                 'desc_tip'    => true,
             ),
             'sandbox' => array(
@@ -206,6 +222,17 @@ class DexPay_Gateway extends WC_Payment_Gateway {
                     '<code>' . WC_Log_Handler_File::get_log_file_path('dexpay') . '</code>'
                 ),
                 'default'     => 'no',
+            ),
+            'checkout_mode' => array(
+                'title'       => __('Checkout Display', 'dexpay-woocommerce'),
+                'type'        => 'select',
+                'description' => __('Embedded: the payment opens in a popup window on your site (no redirection). Redirect: the customer is sent to the DEXPAY payment page.', 'dexpay-woocommerce'),
+                'default'     => 'modal',
+                'desc_tip'    => true,
+                'options'     => array(
+                    'modal'    => __('Embedded popup (recommended)', 'dexpay-woocommerce'),
+                    'redirect' => __('Redirect to payment page', 'dexpay-woocommerce'),
+                ),
             ),
             'order_status_on_payment' => array(
                 'title'       => __('Order Status After Payment', 'dexpay-woocommerce'),
@@ -333,23 +360,18 @@ class DexPay_Gateway extends WC_Payment_Gateway {
      * @return string
      */
     public function get_icon() {
-        $icon_html = '<span style="display: inline-flex; gap: 4px; align-items: center; margin-left: 8px;">';
-        $base_url  = 'https://dexchange-s3.s3.eu-north-1.amazonaws.com/icons/';
-        
-        // Display main payment method icons
-        $icons = array(
-            'card' => 'card.png',
-            'wave' => 'wave.png',
-            'om'   => 'om.png',
-            'mtn'  => 'mtn.png',
+        // Un seul logo DEXPAY net à côté du titre (les moyens de paiement
+        // détaillés sont déjà montrés par la bannière de payment_fields).
+        // Filtrable pour personnalisation / suppression.
+        $logo = apply_filters(
+            'dexpay_gateway_logo_url',
+            DEXPAY_WC_PLUGIN_URL . 'assets/images/dexpay-logo.png'
         );
 
-        foreach ($icons as $key => $icon) {
-            $icon_url = $base_url . $icon;
-            $icon_html .= '<img src="' . esc_url($icon_url) . '" alt="' . esc_attr($key) . '" style="height: 20px; width: auto; border-radius: 3px;" onerror="this.style.display=\'none\'" />';
+        $icon_html = '';
+        if ($logo) {
+            $icon_html = '<img src="' . esc_url($logo) . '" alt="DEXPAY" style="height: 22px; width: auto; margin-left: 8px; vertical-align: middle;" onerror="this.style.display=\'none\'" />';
         }
-        
-        $icon_html .= '</span>';
 
         return apply_filters('woocommerce_gateway_icon', $icon_html, $this->id);
     }
@@ -363,21 +385,17 @@ class DexPay_Gateway extends WC_Payment_Gateway {
             if ($this->sandbox) {
                 $desc .= ' ' . __('(SANDBOX MODE - No real charges)', 'dexpay-woocommerce');
             }
-            echo '<p style="margin: 0 0 15px 0; color: #666; font-size: 14px;">' . esc_html($desc) . '</p>';
+            echo '<p style="margin: 0 0 15px 0; color: #666; font-size: 14px;">' . nl2br(esc_html($desc)) . '</p>';
         }
 
-        // Display accepted payment methods with inline styles for reliability
-        echo '<div style="background: #f8f9fa; border-radius: 8px; padding: 12px 15px;">';
-        echo '<p style="font-size: 11px; color: #888; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">' . esc_html__('Accepted Payment Methods', 'dexpay-woocommerce') . '</p>';
-        echo '<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">';
-        
-        $methods = DexPay_API::get_payment_methods();
-        foreach ($methods as $key => $method) {
-            echo '<img src="' . esc_url($method['icon']) . '" alt="' . esc_attr($method['name']) . '" title="' . esc_attr($method['name']) . '" style="height: 32px; width: auto; border-radius: 4px; background: #fff; padding: 4px; border: 1px solid #e0e0e0;" onerror="this.style.display=\'none\'" />';
-        }
-        
-        echo '</div>';
-        echo '</div>';
+        // Bannière des moyens de paiement acceptés : image unique bundlée dans le
+        // plugin (remplace l'ancienne grille d'icônes). Filtrable pour permettre
+        // une bannière personnalisée par le marchand.
+        $banner = apply_filters(
+            'dexpay_payment_banner_url',
+            DEXPAY_WC_PLUGIN_URL . 'assets/images/dexpay-banner.png'
+        );
+        echo '<img src="' . esc_url($banner) . '" alt="' . esc_attr__('Accepted payment methods', 'dexpay-woocommerce') . '" style="display:block;width:100%;height:auto;border-radius:10px;margin-top:4px;" />';
     }
 
     /**
@@ -394,96 +412,327 @@ class DexPay_Gateway extends WC_Payment_Gateway {
             return array('result' => 'fail');
         }
 
-        DexPay_Logger::info('Processing payment for order #' . $order_id);
+        // Tout le traitement post-commande est enveloppé dans un try/catch.
+        // Sans ça, la moindre exception PHP levée APRÈS la création de la session
+        // DexPay (sauvegarde meta, update_status, order note, hooks tiers) remonte
+        // jusqu'à WC_Checkout::process_checkout() qui l'affiche en bandeau générique
+        // "Une erreur est survenue lors du traitement de votre commande" — sans
+        // rediriger, alors que le lien de paiement a bien été créé côté DexPay.
+        try {
+            DexPay_Logger::info('Processing payment for order #' . $order_id);
 
-        // Generate unique reference
-        $reference = $this->generate_reference($order);
+            // Generate unique reference
+            $reference = $this->generate_reference($order);
 
-        // Build checkout session params
-        $params = array(
-            'reference'           => $reference,
-            'item_name'           => $this->get_order_item_name($order),
-            'amount'              => (int) ($order->get_total() * 1), // Amount in smallest unit (no decimals for XOF)
-            'currency'            => $order->get_currency(),
-            'success_url'         => $this->get_return_url($order),
-            'failure_url'         => wc_get_checkout_url(),
-            'webhook_url'         => home_url('/wc-api/dexpay_webhook/'),
-            'is_one_shot_payment' => true,
-            'client_support_fee'  => $this->client_support_fee,
-            'metadata'            => array(
-                'order_id'     => $order_id,
-                'order_key'    => $order->get_order_key(),
-                'customer_id'  => $order->get_customer_id(),
-                'source'       => 'woocommerce',
-                'plugin_version' => DEXPAY_WC_VERSION,
-            ),
-        );
+            // Build checkout session params
+            $params = array(
+                'reference'           => $reference,
+                'item_name'           => $this->get_order_item_name($order),
+                'amount'              => (int) ($order->get_total() * 1), // Amount in smallest unit (no decimals for XOF)
+                'currency'            => $order->get_currency(),
+                'success_url'         => $this->get_return_url($order),
+                'failure_url'         => wc_get_checkout_url(),
+                'webhook_url'         => home_url('/wc-api/dexpay_webhook/'),
+                'is_one_shot_payment' => true,
+                'client_support_fee'  => $this->client_support_fee,
+                'metadata'            => array(
+                    'order_id'     => $order_id,
+                    'order_key'    => $order->get_order_key(),
+                    'customer_id'  => $order->get_customer_id(),
+                    'source'       => 'woocommerce',
+                    'plugin_version' => DEXPAY_WC_VERSION,
+                ),
+            );
 
-        // Create checkout session
-        $response = $this->api->create_checkout_session($params);
-
-        if (is_wp_error($response)) {
-            DexPay_Logger::error('Failed to create checkout session', array(
+            // DIAG (temporaire) : payload exact envoyé à DexPay. Le logger masque
+            // déjà les clés sensibles ; ici il n'y a de toute façon aucun secret.
+            DexPay_Logger::info('DexPay checkout payload', array(
                 'order_id' => $order_id,
-                'error'    => $response->get_error_message(),
+                'params'   => $params,
+            ));
+
+            // Create checkout session
+            $response = $this->api->create_checkout_session($params);
+
+            if (is_wp_error($response)) {
+                DexPay_Logger::error('Failed to create checkout session', array(
+                    'order_id'   => $order_id,
+                    'error'      => $response->get_error_message(),
+                    'error_data' => $response->get_error_data(),
+                ));
+
+                wc_add_notice(
+                    __('Payment error: ', 'dexpay-woocommerce') . $response->get_error_message(),
+                    'error'
+                );
+                return array('result' => 'fail');
+            }
+
+            // Extraction tolérante de l'URL et de l'identifiant de session :
+            // l'API renvoie data.payment_url (et data.reference), mais on accepte
+            // aussi d'autres formes pour ne pas casser si la réponse évolue.
+            $payment_url = $this->extract_payment_url($response);
+            $session_id  = $this->extract_session_id($response);
+
+            // DIAG (temporaire) : ce qu'on a réellement extrait de la réponse.
+            DexPay_Logger::info('DexPay response parsed', array(
+                'order_id'      => $order_id,
+                'session_id'    => $session_id,
+                'payment_url'   => $payment_url,
+                'response_keys' => is_array($response) ? array_keys($response) : gettype($response),
+                'data_keys'     => (is_array($response) && isset($response['data']) && is_array($response['data'])) ? array_keys($response['data']) : null,
+            ));
+
+            if (empty($payment_url)) {
+                DexPay_Logger::error('No payment URL in response', array(
+                    'order_id' => $order_id,
+                    'response' => $response,
+                ));
+
+                wc_add_notice(__('Unable to create payment session. Please try again.', 'dexpay-woocommerce'), 'error');
+                return array('result' => 'fail');
+            }
+
+            // Store session data in order meta
+            $order->update_meta_data('_dexpay_reference', $reference);
+            $order->update_meta_data('_dexpay_session_id', $session_id);
+            $order->update_meta_data('_dexpay_payment_url', $payment_url);
+            $order->update_meta_data('_dexpay_sandbox', $this->sandbox ? 'yes' : 'no');
+            $order->save();
+
+            // Add order note
+            $order->add_order_note(
+                sprintf(
+                    /* translators: %s: DEXPAY reference */
+                    __('DEXPAY payment initiated. Reference: %s', 'dexpay-woocommerce'),
+                    $reference
+                )
+            );
+
+            // Update order status
+            $order->update_status('pending', __('Awaiting DEXPAY payment.', 'dexpay-woocommerce'));
+
+            // Mode "modal" : on renvoie vers la page "Payer la commande"
+            // (order-receipt.php, contexte de paiement — PAS "commande reçue").
+            // Le hook woocommerce_receipt_dexpay y charge le SDK dexpay.js et
+            // ouvre le paiement en popup embarquée. Au succès, le SDK redirige
+            // vers la vraie page "commande reçue". Mode "redirect" : comportement
+            // classique (redirection directe vers le payment_url hébergé).
+            $redirect = ('redirect' === $this->checkout_mode)
+                ? $payment_url
+                : $order->get_checkout_payment_url(true);
+
+            // Return redirect
+            $result = array(
+                'result'   => 'success',
+                'redirect' => $redirect,
+            );
+
+            // DIAG (temporaire) : valeur exacte retournée à WooCommerce.
+            DexPay_Logger::info('Returning to WooCommerce', array(
+                'order_id' => $order_id,
+                'result'   => $result,
+            ));
+
+            return $result;
+        } catch (\Throwable $e) {
+            // Une exception ici = le lien DexPay est probablement déjà créé mais
+            // la finalisation côté WooCommerce a échoué. On loggue tout (toujours
+            // visible, même Debug Log désactivé) et on renvoie un échec propre
+            // avec un message client simple — jamais un fatal qui casse le checkout.
+            DexPay_Logger::critical('Exception in process_payment after session creation', array(
+                'order_id' => $order_id,
+                'message'  => $e->getMessage(),
+                'where'    => $e->getFile() . ':' . $e->getLine(),
+                'trace'    => $e->getTraceAsString(),
             ));
 
             wc_add_notice(
-                __('Payment error: ', 'dexpay-woocommerce') . $response->get_error_message(),
+                __('A technical error occurred while finalizing your payment. If you were charged, please check your order history before retrying.', 'dexpay-woocommerce'),
                 'error'
             );
             return array('result' => 'fail');
         }
+    }
 
-        // Get payment URL
-        $payment_url = isset($response['data']['payment_url']) ? $response['data']['payment_url'] : null;
-        $session_id  = isset($response['data']['id']) ? $response['data']['id'] : null;
-
-        // Handle sandbox mode with sandbox_payment_url
-        if ($this->sandbox && isset($response['data']['sandbox_payment_url'])) {
-            $payment_url = $response['data']['sandbox_payment_url'];
+    /**
+     * Extract the payment URL from the API response, tolerant of shape changes.
+     *
+     * Réponse attendue : { data: { payment_url, sandbox_payment_url? } }.
+     * On accepte aussi checkout_url / url / payment_link au cas où, et le
+     * fallback au niveau racine si jamais l'enveloppe `data` disparaît.
+     *
+     * @param mixed $response Decoded API response
+     * @return string|null
+     */
+    private function extract_payment_url($response) {
+        if (!is_array($response)) {
+            return null;
         }
 
+        $data = (isset($response['data']) && is_array($response['data'])) ? $response['data'] : array();
+
+        // En sandbox, l'URL de test prime quand elle est fournie.
+        if ($this->sandbox) {
+            if (!empty($data['sandbox_payment_url'])) {
+                return $data['sandbox_payment_url'];
+            }
+            if (!empty($response['sandbox_payment_url'])) {
+                return $response['sandbox_payment_url'];
+            }
+        }
+
+        $candidates = array('payment_url', 'checkout_url', 'url', 'payment_link', 'link');
+
+        foreach ($candidates as $key) {
+            if (!empty($data[$key])) {
+                return $data[$key];
+            }
+        }
+        foreach ($candidates as $key) {
+            if (!empty($response[$key])) {
+                return $response[$key];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract the checkout session identifier from the API response.
+     *
+     * L'API REST renvoie `data.reference` (pas `data.id`). On lit donc reference
+     * en priorité, avec id/session_id en fallback.
+     *
+     * @param mixed $response Decoded API response
+     * @return string|null
+     */
+    private function extract_session_id($response) {
+        if (!is_array($response)) {
+            return null;
+        }
+
+        $data = (isset($response['data']) && is_array($response['data'])) ? $response['data'] : $response;
+
+        foreach (array('id', 'reference', 'session_id') as $key) {
+            if (!empty($data[$key])) {
+                return (string) $data[$key];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Receipt page hook ("Pay for order") : ouvre le checkout embarqué.
+     *
+     * @param int $order_id Order ID
+     */
+    public function receipt_page($order_id) {
+        $order = wc_get_order($order_id);
+        if ($order) {
+            $this->render_embedded_checkout($order);
+        }
+    }
+
+    /**
+     * Render the embedded checkout (popup iframe via dexpay.js) on the
+     * order-pay ("Pay for order") page, while the order awaits payment.
+     *
+     * @param WC_Order $order Order object
+     */
+    private function render_embedded_checkout($order) {
+        if ('modal' !== $this->checkout_mode) {
+            return;
+        }
+
+        // Uniquement tant que la commande attend le paiement (pending/failed).
+        if (!$order->needs_payment()) {
+            return;
+        }
+
+        $payment_url = $order->get_meta('_dexpay_payment_url');
         if (empty($payment_url)) {
-            DexPay_Logger::error('No payment URL in response', array(
-                'order_id' => $order_id,
-                'response' => $response,
-            ));
-
-            wc_add_notice(__('Unable to create payment session. Please try again.', 'dexpay-woocommerce'), 'error');
-            return array('result' => 'fail');
+            return;
         }
 
-        // Store session data in order meta
-        $order->update_meta_data('_dexpay_reference', $reference);
-        $order->update_meta_data('_dexpay_session_id', $session_id);
-        $order->update_meta_data('_dexpay_payment_url', $payment_url);
-        $order->update_meta_data('_dexpay_sandbox', $this->sandbox ? 'yes' : 'no');
-        $order->save();
+        // SDK servi depuis le domaine checkout DEXPAY (filtrable si self-host).
+        $sdk_url     = apply_filters('dexpay_sdk_url', 'https://checkout.dexpay.africa/dexpay.js');
+        $success_url = $order->get_checkout_order_received_url();
 
-        // Add order note
-        $order->add_order_note(
-            sprintf(
-                /* translators: %s: DEXPAY reference */
-                __('DEXPAY payment initiated. Reference: %s', 'dexpay-woocommerce'),
-                $reference
-            )
+        // Endpoint de statut interrogé par le SDK (le webhook met la commande à
+        // jour ; on poll jusqu'à done=true). Protégé par la clé de commande.
+        $status_url = add_query_arg(
+            array(
+                'order_id' => $order->get_id(),
+                'key'      => $order->get_order_key(),
+            ),
+            WC_AJAX::get_endpoint('dexpay_check_order')
         );
+        ?>
+        <div id="dexpay-embedded" style="text-align:center;margin:16px 0;">
+            <p><?php esc_html_e('Finalize your payment in the secure window.', 'dexpay-woocommerce'); ?></p>
+            <p style="font-size:13px;color:#666;margin-top:8px;">
+                <?php esc_html_e("Window didn't open?", 'dexpay-woocommerce'); ?>
+                <a id="dexpay-pay-link" href="<?php echo esc_url($payment_url); ?>">
+                    <?php esc_html_e('Pay on the secure page', 'dexpay-woocommerce'); ?>
+                </a>
+            </p>
+        </div>
+        <script src="<?php echo esc_url($sdk_url); ?>"></script>
+        <script>
+        (function () {
+            var opts = {
+                paymentUrl: <?php echo wp_json_encode($payment_url); ?>,
+                successUrl: <?php echo wp_json_encode($success_url); ?>,
+                statusCheck: function () {
+                    return fetch(<?php echo wp_json_encode($status_url); ?>, { credentials: 'same-origin' })
+                        .then(function (r) { return r.json(); })
+                        .then(function (s) { return { done: !!s.done, success: !!s.success }; })
+                        .catch(function () { return { done: false }; });
+                },
+                onSuccess: function () { window.location.href = opts.successUrl; },
+                pollInterval: 4000
+            };
+            // Ouverture auto dès que le SDK est chargé (filet anti-réseau de 4s).
+            // Le lien "Pay on the secure page" reste un repli plein écran si le
+            // SDK ne charge pas ou si l'iframe est bloquée.
+            var tries = 0;
+            (function wait() {
+                if (window.DexPay) { window.DexPay.checkout(opts); return; }
+                if (tries++ < 40) { setTimeout(wait, 100); }
+            })();
+        })();
+        </script>
+        <?php
+    }
 
-        // Update order status
-        $order->update_status('pending', __('Awaiting DEXPAY payment.', 'dexpay-woocommerce'));
+    /**
+     * AJAX endpoint (wc_ajax=dexpay_check_order) polled by the SDK to know if
+     * the order has been paid. Source of truth = webhook-updated order status.
+     */
+    public function ajax_check_order() {
+        $order_id = isset($_GET['order_id']) ? absint($_GET['order_id']) : 0;
+        $key      = isset($_GET['key']) ? sanitize_text_field(wp_unslash($_GET['key'])) : '';
 
-        DexPay_Logger::info('Redirecting to DEXPAY payment page', array(
-            'order_id'    => $order_id,
-            'reference'   => $reference,
-            'payment_url' => $payment_url,
+        $order = $order_id ? wc_get_order($order_id) : false;
+
+        // Validation par clé de commande : pas de fuite de statut sans la clé.
+        if (!$order || !hash_equals($order->get_order_key(), $key)) {
+            wp_send_json(array('done' => false, 'error' => 'invalid'));
+        }
+
+        $status          = $order->get_status(); // sans préfixe "wc-"
+        $failed_statuses = array('failed', 'cancelled');
+
+        $success = $order->is_paid(); // processing / completed (+ statuts "paid")
+        $done    = $success || in_array($status, $failed_statuses, true);
+
+        wp_send_json(array(
+            'done'    => $done,
+            'success' => $success,
+            'status'  => $status,
         ));
-
-        // Return redirect
-        return array(
-            'result'   => 'success',
-            'redirect' => $payment_url,
-        );
     }
 
     /**
