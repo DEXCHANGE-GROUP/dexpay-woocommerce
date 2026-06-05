@@ -3,7 +3,7 @@
  * Plugin Name: DEXPAY for WooCommerce
  * Plugin URI: https://dexpay.africa
  * Description: Accept Mobile Money payments (Wave, Orange Money, MTN, Moov) with DEXPAY payment gateway for WooCommerce.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: DEXPAY
  * Author URI: https://dexpay.africa
  * License: GPL-2.0+
@@ -23,7 +23,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DEXPAY_WC_VERSION', '1.1.0');
+define('DEXPAY_WC_VERSION', '1.1.1');
 define('DEXPAY_WC_PLUGIN_FILE', __FILE__);
 define('DEXPAY_WC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DEXPAY_WC_PLUGIN_URL', plugin_dir_url(__FILE__));

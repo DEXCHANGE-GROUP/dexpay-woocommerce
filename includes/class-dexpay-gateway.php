@@ -500,17 +500,36 @@ class DexPay_Gateway extends WC_Payment_Gateway {
             $order->update_meta_data('_dexpay_sandbox', $this->sandbox ? 'yes' : 'no');
             $order->save();
 
-            // Add order note
-            $order->add_order_note(
-                sprintf(
-                    /* translators: %s: DEXPAY reference */
-                    __('DEXPAY payment initiated. Reference: %s', 'dexpay-woocommerce'),
-                    $reference
-                )
-            );
+            // Note de commande + statut = effets NON essentiels. Une note de
+            // commande est un "comment" WP : un plugin tiers branché sur
+            // wp_insert_comment (ex: Akismet) peut y lever une exception. Ça ne
+            // doit JAMAIS faire échouer un paiement déjà initié — on isole donc
+            // chaque effet dans son propre try/catch et on continue.
+            try {
+                $order->add_order_note(
+                    sprintf(
+                        /* translators: %s: DEXPAY reference */
+                        __('DEXPAY payment initiated. Reference: %s', 'dexpay-woocommerce'),
+                        $reference
+                    )
+                );
+            } catch (\Throwable $e) {
+                DexPay_Logger::warning('add_order_note failed (non-blocking)', array(
+                    'order_id' => $order_id,
+                    'message'  => $e->getMessage(),
+                    'where'    => $e->getFile() . ':' . $e->getLine(),
+                ));
+            }
 
-            // Update order status
-            $order->update_status('pending', __('Awaiting DEXPAY payment.', 'dexpay-woocommerce'));
+            try {
+                $order->update_status('pending', __('Awaiting DEXPAY payment.', 'dexpay-woocommerce'));
+            } catch (\Throwable $e) {
+                DexPay_Logger::warning('update_status failed (non-blocking)', array(
+                    'order_id' => $order_id,
+                    'message'  => $e->getMessage(),
+                    'where'    => $e->getFile() . ':' . $e->getLine(),
+                ));
+            }
 
             // Mode "modal" : on renvoie vers la page "Payer la commande"
             // (order-receipt.php, contexte de paiement — PAS "commande reçue").
